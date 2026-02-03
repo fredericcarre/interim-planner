@@ -1,0 +1,82 @@
+.page {
+  min-height: 100vh;
+  min-height: 100dvh;
+  background-color: var(--bg-secondary);
+}
+
+.content {
+  padding: var(--spacing-md);
+  max-width: 480px;
+  margin: 0 auto;
+}
+
+.previewCard {
+  margin-bottom: var(--spacing-lg);
+}
+
+.monthTitle {
+  font-size: var(--font-size-xl);
+  font-weight: 600;
+  text-align: center;
+  margin-bottom: var(--spacing-md);
+  text-transform: capitalize;
+}
+
+.summaryGrid {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: var(--spacing-md);
+  margin-bottom: var(--spacing-md);
+}
+
+.summaryItem {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.summaryLabel {
+  font-size: var(--font-size-sm);
+  color: var(--text-secondary);
+}
+
+.summaryValue {
+  font-size: var(--font-size-lg);
+  font-weight: 600;
+  color: var(--text-primary);
+}
+
+.netValue {
+  color: var(--color-success);
+}
+
+.coeffInfo {
+  text-align: center;
+  font-size: var(--font-size-sm);
+  color: var(--text-muted);
+  padding-top: var(--spacing-md);
+  border-top: 1px solid var(--border-color);
+}
+
+.exportButton {
+  margin-bottom: var(--spacing-md);
+}
+
+.hint {
+  text-align: center;
+  font-size: var(--font-size-sm);
+  color: var(--text-secondary);
+  line-height: 1.5;
+}
+
+.emptyState {
+  text-align: center;
+  padding: var(--spacing-xl);
+  color: var(--text-secondary);
+}
+
+.emptyHint {
+  margin-top: var(--spacing-sm);
+  font-size: var(--font-size-sm);
+  color: var(--text-muted);
+}

@@ -1,0 +1,112 @@
+.page {
+  min-height: 100vh;
+  min-height: 100dvh;
+  background-color: var(--bg-secondary);
+}
+
+.content {
+  padding: var(--spacing-md);
+  max-width: 480px;
+  margin: 0 auto;
+  display: flex;
+  flex-direction: column;
+  gap: var(--spacing-md);
+}
+
+.summaryCard {
+  display: flex;
+  flex-direction: column;
+  gap: var(--spacing-md);
+}
+
+.sectionTitle {
+  font-size: var(--font-size-lg);
+  font-weight: 600;
+  color: var(--text-primary);
+  margin: 0 0 var(--spacing-xs) 0;
+}
+
+.sectionDescription {
+  font-size: var(--font-size-sm);
+  color: var(--text-secondary);
+  line-height: 1.5;
+  margin: 0 0 var(--spacing-md) 0;
+}
+
+.dataGrid {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: var(--spacing-md);
+}
+
+.dataItem {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  padding: var(--spacing-md);
+  background-color: var(--bg-tertiary);
+  border-radius: var(--border-radius);
+}
+
+.dataValue {
+  font-size: var(--font-size-2xl);
+  font-weight: 700;
+  color: var(--color-primary);
+}
+
+.dataLabel {
+  font-size: var(--font-size-sm);
+  color: var(--text-secondary);
+}
+
+.storageInfo {
+  font-size: var(--font-size-sm);
+  color: var(--text-muted);
+  margin: 0;
+  font-style: italic;
+}
+
+.dangerCard {
+  border: 1px solid #fecaca;
+  background-color: #fef2f2;
+}
+
+.dangerTitle {
+  font-size: var(--font-size-lg);
+  font-weight: 600;
+  color: var(--color-danger);
+  margin: 0 0 var(--spacing-xs) 0;
+}
+
+/* Delete modal */
+.deleteModal {
+  display: flex;
+  flex-direction: column;
+  gap: var(--spacing-md);
+}
+
+.deleteWarning {
+  color: var(--text-primary);
+  margin: 0;
+}
+
+.deleteList {
+  margin: 0;
+  padding-left: var(--spacing-lg);
+  color: var(--text-secondary);
+}
+
+.deleteList li {
+  margin-bottom: var(--spacing-xs);
+}
+
+.deleteConfirmLabel {
+  color: var(--text-primary);
+  margin: 0;
+}
+
+.deleteActions {
+  display: flex;
+  gap: var(--spacing-sm);
+  justify-content: flex-end;
+}

@@ -1,0 +1,21 @@
+.card {
+  background: var(--bg-primary);
+  border-radius: var(--border-radius-lg);
+  box-shadow: var(--shadow);
+}
+
+.none {
+  padding: 0;
+}
+
+.sm {
+  padding: var(--spacing-sm);
+}
+
+.md {
+  padding: var(--spacing-md);
+}
+
+.lg {
+  padding: var(--spacing-lg);
+}
