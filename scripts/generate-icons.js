@@ -3,17 +3,10 @@
  *
  * Usage: node scripts/generate-icons.js
  *
- * This script generates PNG icons from the SVG favicon.
- * Requires: sharp (npm install sharp --save-dev)
+ * This script generates PNG icons from a source image.
+ * Place your source image at public/icon-source.png
  *
- * If sharp is not available, you can generate icons manually:
- * 1. Open public/favicon.svg in a browser
- * 2. Use a tool like https://realfavicongenerator.net/
- * 3. Save as PNG in the following sizes:
- *    - icon-192.png (192x192)
- *    - icon-512.png (512x512)
- *    - icon-maskable.png (512x512, with padding for safe area)
- *    - apple-touch-icon.png (180x180)
+ * Requires: sharp (npm install sharp --save-dev)
  */
 
 const fs = require('fs');
@@ -24,59 +17,70 @@ let sharp;
 try {
   sharp = require('sharp');
 } catch {
-  console.log('Sharp is not installed. Installing...');
+  console.log('Sharp is not installed.');
   console.log('Run: npm install sharp --save-dev');
   console.log('');
-  console.log('Or generate icons manually using the SVG file at public/favicon.svg');
-  console.log('Required sizes:');
-  console.log('  - icon-192.png (192x192)');
-  console.log('  - icon-512.png (512x512)');
-  console.log('  - icon-maskable.png (512x512)');
-  console.log('  - apple-touch-icon.png (180x180)');
+  console.log('Then run this script again.');
   process.exit(1);
 }
 
 const publicDir = path.join(__dirname, '..', 'public');
-const svgPath = path.join(publicDir, 'favicon.svg');
+const sourceImage = path.join(publicDir, 'icon-source.png');
 
 async function generateIcons() {
-  const svgBuffer = fs.readFileSync(svgPath);
+  if (!fs.existsSync(sourceImage)) {
+    console.log('Source image not found!');
+    console.log('Please place your icon at: public/icon-source.png');
+    console.log('');
+    console.log('The image should be at least 512x512 pixels.');
+    process.exit(1);
+  }
+
+  console.log('Generating icons from:', sourceImage);
+  console.log('');
 
   // Generate standard icons
   const sizes = [
     { name: 'icon-192.png', size: 192 },
     { name: 'icon-512.png', size: 512 },
     { name: 'apple-touch-icon.png', size: 180 },
+    { name: 'favicon.png', size: 32 },
   ];
 
   for (const { name, size } of sizes) {
-    await sharp(svgBuffer)
-      .resize(size, size)
+    await sharp(sourceImage)
+      .resize(size, size, { fit: 'cover' })
       .png()
       .toFile(path.join(publicDir, name));
-    console.log(`Generated ${name}`);
+    console.log(`Generated ${name} (${size}x${size})`);
   }
 
-  // Generate maskable icon (with padding)
-  // Maskable icons need a safe area, so we add padding
+  // Generate maskable icon (with padding for safe area)
   const maskableSize = 512;
   const safeArea = Math.floor(maskableSize * 0.1); // 10% padding
 
-  await sharp(svgBuffer)
-    .resize(maskableSize - safeArea * 2, maskableSize - safeArea * 2)
+  await sharp(sourceImage)
+    .resize(maskableSize - safeArea * 2, maskableSize - safeArea * 2, { fit: 'cover' })
     .extend({
       top: safeArea,
       bottom: safeArea,
       left: safeArea,
       right: safeArea,
-      background: '#3b82f6'
+      background: { r: 74, g: 144, b: 226, alpha: 1 } // Blue background
     })
     .png()
     .toFile(path.join(publicDir, 'icon-maskable.png'));
-  console.log('Generated icon-maskable.png');
+  console.log('Generated icon-maskable.png (512x512 maskable)');
 
   console.log('');
   console.log('All icons generated successfully!');
+  console.log('');
+  console.log('Generated files:');
+  console.log('  - icon-192.png');
+  console.log('  - icon-512.png');
+  console.log('  - icon-maskable.png');
+  console.log('  - apple-touch-icon.png');
+  console.log('  - favicon.png');
 }
 
 generateIcons().catch(console.error);

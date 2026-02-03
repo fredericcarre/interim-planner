@@ -10,7 +10,7 @@ export default defineConfig({
     react(),
     VitePWA({
       registerType: 'autoUpdate',
-      includeAssets: ['favicon.svg', 'apple-touch-icon.svg'],
+      includeAssets: ['favicon.png', 'favicon.svg', 'apple-touch-icon.png'],
       manifest: {
         name: 'Interim Planner',
         short_name: 'Interim',
