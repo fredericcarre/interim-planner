@@ -35,7 +35,7 @@ export function WorkEntryForm() {
 
   // Form fields
   const [date, setDate] = useState(getToday()); // For editing
-  const [dates, setDates] = useState<string[]>([getToday()]); // For creating multiple
+  const [dates, setDates] = useState<string[]>([]); // For creating multiple
   const [establishmentId, setEstablishmentId] = useState('');
   const [hours, setHours] = useState('');
   const [hourlyRate, setHourlyRate] = useState('');

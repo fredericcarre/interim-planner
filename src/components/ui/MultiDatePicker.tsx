@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { formatDateDisplay } from '@/utils/dates';
+import { formatDateDisplay, getToday } from '@/utils/dates';
 import styles from './MultiDatePicker.module.css';
 
 interface MultiDatePickerProps {
@@ -10,7 +10,7 @@ interface MultiDatePickerProps {
 }
 
 export function MultiDatePicker({ label, dates, onChange, helperText }: MultiDatePickerProps) {
-  const [newDate, setNewDate] = useState('');
+  const [newDate, setNewDate] = useState(getToday());
 
   const handleAddDate = () => {
     if (newDate && !dates.includes(newDate)) {
