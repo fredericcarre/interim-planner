@@ -1,7 +1,7 @@
 import { useState, useEffect, FormEvent } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 import { Header, Loading, Alert } from '@/components/common';
-import { Button, Input, NumberInput, Card } from '@/components/ui';
+import { Button, Input, NumberInput, Card, ColorPicker } from '@/components/ui';
 import {
   getEstablishment,
   createEstablishment,
@@ -123,12 +123,11 @@ export function EstablishmentForm() {
               helperText="Ex: 7,5 - Heures standard par jour"
             />
 
-            <Input
+            <ColorPicker
               label="Couleur (optionnel)"
               value={color}
-              onChange={(e) => setColor(e.target.value)}
-              placeholder="#3b82f6"
-              helperText="Code couleur hexadécimal pour identifier l'établissement."
+              onChange={setColor}
+              helperText="Pour identifier l'établissement dans la liste"
             />
 
             <Button type="submit" fullWidth loading={saving}>
