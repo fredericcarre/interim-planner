@@ -194,9 +194,9 @@ export function MonthView() {
             </Button>
             <Button
               variant="secondary"
-              onClick={() => navigate(`/compare/${currentMonth}`)}
+              onClick={() => navigate(`/share/${currentMonth}`)}
             >
-              Comparer fiche de paie
+              Partager
             </Button>
           </div>
         </div>
