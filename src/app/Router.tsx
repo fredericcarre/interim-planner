@@ -27,6 +27,8 @@ import { SettingsPage } from '@/features/settings';
 
 import { DataPrivacyPage, PrivacyPolicyPage } from '@/features/privacy';
 
+import { SharePage, SharedViewPage } from '@/features/share';
+
 function PublicRoute({ children }: { children: React.ReactNode }) {
   const { isAuthenticated, loading } = useAuth();
 
@@ -74,6 +76,9 @@ export function Router() {
         {/* Privacy policy is accessible without login */}
         <Route path="/privacy/policy" element={<PrivacyPolicyPage />} />
 
+        {/* Shared planning view (public) */}
+        <Route path="/shared/:token" element={<SharedViewPage />} />
+
         {/* Protected routes */}
         <Route
           path="/"
@@ -114,6 +119,14 @@ export function Router() {
           element={
             <ProtectedRoute>
               <ComparePage />
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/share/:month"
+          element={
+            <ProtectedRoute>
+              <SharePage />
             </ProtectedRoute>
           }
         />

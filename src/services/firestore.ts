@@ -39,6 +39,13 @@ function toDate(timestamp: Timestamp | Date): Date {
   return timestamp;
 }
 
+// Helper to remove undefined values (Firestore doesn't accept undefined)
+function removeUndefined<T extends object>(obj: T): Partial<T> {
+  return Object.fromEntries(
+    Object.entries(obj).filter(([, value]) => value !== undefined)
+  ) as Partial<T>;
+}
+
 // ============ USER SETTINGS ============
 
 /**
@@ -242,7 +249,7 @@ export async function createWorkEntry(
 
   const now = Timestamp.now();
   await setDoc(docRef, {
-    ...data,
+    ...removeUndefined(data),
     establishmentNameSnapshot: establishmentName,
     createdAt: now,
     updatedAt: now,
@@ -264,7 +271,7 @@ export async function updateWorkEntry(
 
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const updateData: any = {
-    ...data,
+    ...removeUndefined(data),
     updatedAt: Timestamp.now(),
   };
 
@@ -330,4 +337,100 @@ export async function deleteAllUserData(): Promise<void> {
   });
 
   await batch.commit();
+}
+
+// ============ SHARE LINKS ============
+
+export interface ShareLink {
+  token: string;
+  userId: string;
+  month: string;
+  entries: Array<{
+    date: string;
+    establishmentName: string;
+    hours: number;
+    hourlyRate: number;
+    note?: string;
+  }>;
+  summary: {
+    totalHours: number;
+    totalGross: number;
+    totalNet: number;
+    count: number;
+  };
+  createdAt: Date;
+}
+
+/**
+ * Create a share link for a month's planning
+ */
+export async function createShareLink(
+  month: string,
+  entries: WorkEntry[],
+  summary: { totalHours: number; totalGross: number; totalNet: number; count: number }
+): Promise<string> {
+  const uid = getUserId();
+
+  // Generate token
+  const chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789';
+  let token = '';
+  for (let i = 0; i < 12; i++) {
+    token += chars.charAt(Math.floor(Math.random() * chars.length));
+  }
+
+  // Store in public shares collection
+  const docRef = doc(db, 'shares', token);
+  await setDoc(docRef, {
+    token,
+    userId: uid,
+    month,
+    entries: entries.map((e) => ({
+      date: e.date,
+      establishmentName: e.establishmentNameSnapshot,
+      hours: e.hours,
+      hourlyRate: e.hourlyRate,
+      note: e.note || null,
+    })),
+    summary,
+    createdAt: Timestamp.now(),
+  });
+
+  // Store reference in user's collection
+  const userShareRef = doc(db, 'users', uid, 'shares', month);
+  await setDoc(userShareRef, { token, createdAt: Timestamp.now() });
+
+  return token;
+}
+
+/**
+ * Get existing share link for a month
+ */
+export async function getShareLink(month: string): Promise<{ token: string } | null> {
+  const uid = getUserId();
+  const docRef = doc(db, 'users', uid, 'shares', month);
+  const docSnap = await getDoc(docRef);
+
+  if (!docSnap.exists()) {
+    return null;
+  }
+
+  return { token: docSnap.data().token };
+}
+
+/**
+ * Get shared planning by token (public access)
+ */
+export async function getSharedPlanning(token: string): Promise<ShareLink | null> {
+  const docRef = doc(db, 'shares', token);
+  const docSnap = await getDoc(docRef);
+
+  if (!docSnap.exists()) {
+    return null;
+  }
+
+  const data = docSnap.data();
+  return {
+    ...data,
+    createdAt: toDate(data.createdAt),
+  } as ShareLink;
 }

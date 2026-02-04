@@ -1,7 +1,7 @@
 import { useState, useEffect, FormEvent } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 import { Header, Loading, Alert } from '@/components/common';
-import { Button, Input, Card } from '@/components/ui';
+import { Button, Input, NumberInput, Card, ColorPicker } from '@/components/ui';
 import {
   getEstablishment,
   createEstablishment,
@@ -104,36 +104,30 @@ export function EstablishmentForm() {
               autoFocus
             />
 
-            <Input
-              type="number"
+            <NumberInput
               label="Taux horaire par défaut (€)"
               value={defaultHourlyRate}
-              onChange={(e) => setDefaultHourlyRate(e.target.value)}
-              placeholder="12.50"
-              step="0.01"
-              min="0"
+              onChange={setDefaultHourlyRate}
+              placeholder="12,50"
+              decimals={2}
               required
-              helperText="Ce taux sera prérempli lors de la saisie d'une entrée."
+              helperText="Ex: 12,50 - Prérempli lors de la saisie"
             />
 
-            <Input
-              type="number"
+            <NumberInput
               label="Heures par défaut (optionnel)"
               value={defaultHours}
-              onChange={(e) => setDefaultHours(e.target.value)}
-              placeholder="7.5"
-              step="0.25"
-              min="0"
-              max="24"
-              helperText="Nombre d'heures standard pour une journée de travail."
+              onChange={setDefaultHours}
+              placeholder="7,5"
+              decimals={2}
+              helperText="Ex: 7,5 - Heures standard par jour"
             />
 
-            <Input
+            <ColorPicker
               label="Couleur (optionnel)"
               value={color}
-              onChange={(e) => setColor(e.target.value)}
-              placeholder="#3b82f6"
-              helperText="Code couleur hexadécimal pour identifier l'établissement."
+              onChange={setColor}
+              helperText="Pour identifier l'établissement dans la liste"
             />
 
             <Button type="submit" fullWidth loading={saving}>

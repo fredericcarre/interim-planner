@@ -2,8 +2,7 @@ import { useState, useEffect, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Header, Loading } from '@/components/common';
 import { Button, Card } from '@/components/ui';
-import { getWorkEntriesForMonth } from '@/services/firestore';
-import { getUserSettings } from '@/services/firestore';
+import { getWorkEntriesForMonth, getUserSettings, getEstablishments } from '@/services/firestore';
 import { signOut } from '@/services/auth';
 import { useAuth } from '@/contexts/AuthContext';
 import type { WorkEntry, UserSettings, MonthlySummary } from '@/types';
@@ -24,18 +23,29 @@ export function MonthView() {
   const [currentMonth, setCurrentMonth] = useState(getCurrentMonth());
   const [entries, setEntries] = useState<WorkEntry[]>([]);
   const [settings, setSettings] = useState<UserSettings | null>(null);
+  const [establishmentColors, setEstablishmentColors] = useState<Record<string, string>>({});
   const [loading, setLoading] = useState(true);
   const [menuOpen, setMenuOpen] = useState(false);
 
   const loadData = useCallback(async () => {
     setLoading(true);
     try {
-      const [entriesData, settingsData] = await Promise.all([
+      const [entriesData, settingsData, establishmentsData] = await Promise.all([
         getWorkEntriesForMonth(currentMonth),
         getUserSettings(),
+        getEstablishments(),
       ]);
       setEntries(entriesData);
       setSettings(settingsData);
+
+      // Create a map of establishment colors
+      const colorMap: Record<string, string> = {};
+      establishmentsData.forEach((est) => {
+        if (est.color) {
+          colorMap[est.id] = est.color;
+        }
+      });
+      setEstablishmentColors(colorMap);
     } catch (error) {
       console.error('Failed to load data:', error);
     } finally {
@@ -184,9 +194,9 @@ export function MonthView() {
             </Button>
             <Button
               variant="secondary"
-              onClick={() => navigate(`/compare/${currentMonth}`)}
+              onClick={() => navigate(`/share/${currentMonth}`)}
             >
-              Comparer fiche de paie
+              Partager
             </Button>
           </div>
         </div>
@@ -213,6 +223,12 @@ export function MonthView() {
                   padding="sm"
                   onClick={() => navigate(`/entries/${entry.id}`)}
                 >
+                  {establishmentColors[entry.establishmentId] && (
+                    <div
+                      className={styles.entryColorBar}
+                      style={{ backgroundColor: establishmentColors[entry.establishmentId] }}
+                    />
+                  )}
                   <div className={styles.entryHeader}>
                     <span className={styles.entryDate}>
                       {formatDateDisplay(entry.date)}
