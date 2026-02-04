@@ -39,6 +39,13 @@ function toDate(timestamp: Timestamp | Date): Date {
   return timestamp;
 }
 
+// Helper to remove undefined values (Firestore doesn't accept undefined)
+function removeUndefined<T extends object>(obj: T): Partial<T> {
+  return Object.fromEntries(
+    Object.entries(obj).filter(([, value]) => value !== undefined)
+  ) as Partial<T>;
+}
+
 // ============ USER SETTINGS ============
 
 /**
@@ -242,7 +249,7 @@ export async function createWorkEntry(
 
   const now = Timestamp.now();
   await setDoc(docRef, {
-    ...data,
+    ...removeUndefined(data),
     establishmentNameSnapshot: establishmentName,
     createdAt: now,
     updatedAt: now,
@@ -264,7 +271,7 @@ export async function updateWorkEntry(
 
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const updateData: any = {
-    ...data,
+    ...removeUndefined(data),
     updatedAt: Timestamp.now(),
   };
 
