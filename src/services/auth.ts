@@ -7,8 +7,13 @@ import {
   User,
   updateProfile,
   deleteUser as firebaseDeleteUser,
+  GoogleAuthProvider,
+  signInWithPopup,
 } from 'firebase/auth';
 import { auth } from './firebase';
+
+// Google Auth Provider
+const googleProvider = new GoogleAuthProvider();
 
 /**
  * Sign up a new user with email and password
@@ -28,6 +33,14 @@ export async function signUp(email: string, password: string, displayName?: stri
  */
 export async function signIn(email: string, password: string): Promise<User> {
   const userCredential = await signInWithEmailAndPassword(auth, email, password);
+  return userCredential.user;
+}
+
+/**
+ * Sign in with Google
+ */
+export async function signInWithGoogle(): Promise<User> {
+  const userCredential = await signInWithPopup(auth, googleProvider);
   return userCredential.user;
 }
 
@@ -87,6 +100,9 @@ export function getAuthErrorMessage(errorCode: string): string {
     'auth/too-many-requests': 'Trop de tentatives. Veuillez réessayer plus tard.',
     'auth/network-request-failed': 'Erreur réseau. Vérifiez votre connexion.',
     'auth/requires-recent-login': 'Veuillez vous reconnecter pour effectuer cette action.',
+    'auth/popup-closed-by-user': 'La fenêtre de connexion a été fermée.',
+    'auth/cancelled-popup-request': 'Connexion annulée.',
+    'auth/popup-blocked': 'La fenêtre popup a été bloquée. Autorisez les popups pour ce site.',
   };
 
   return errorMessages[errorCode] || 'Une erreur est survenue. Veuillez réessayer.';

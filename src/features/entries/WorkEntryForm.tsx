@@ -1,7 +1,7 @@
 import { useState, useEffect, FormEvent } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 import { Header, Loading, Alert, Modal } from '@/components/common';
-import { Button, Input, Card } from '@/components/ui';
+import { Button, Input, NumberInput, Card } from '@/components/ui';
 import {
   getWorkEntry,
   createWorkEntry,
@@ -228,27 +228,24 @@ export function WorkEntryForm() {
             </div>
 
             <div className={styles.row}>
-              <Input
-                type="number"
+              <NumberInput
                 label="Heures"
                 value={hours}
-                onChange={(e) => setHours(e.target.value)}
-                placeholder="7.5"
-                step="0.25"
-                min="0"
-                max="24"
+                onChange={setHours}
+                placeholder="7,5"
+                decimals={2}
                 required
+                helperText="Ex: 7,5 ou 7.5"
               />
 
-              <Input
-                type="number"
+              <NumberInput
                 label="Taux horaire (€)"
                 value={hourlyRate}
-                onChange={(e) => setHourlyRate(e.target.value)}
-                placeholder="12.50"
-                step="0.01"
-                min="0"
+                onChange={setHourlyRate}
+                placeholder="12,50"
+                decimals={2}
                 required
+                helperText="Ex: 12,50 ou 12.50"
               />
             </div>
 
@@ -339,23 +336,19 @@ export function WorkEntryForm() {
             placeholder="Nom de l'établissement"
             autoFocus
           />
-          <Input
-            type="number"
+          <NumberInput
             label="Taux horaire par défaut (€)"
             value={newEstablishmentRate}
-            onChange={(e) => setNewEstablishmentRate(e.target.value)}
-            placeholder="12.50"
-            step="0.01"
-            min="0"
+            onChange={setNewEstablishmentRate}
+            placeholder="12,50"
+            decimals={2}
           />
-          <Input
-            type="number"
+          <NumberInput
             label="Heures par défaut (optionnel)"
             value={newEstablishmentHours}
-            onChange={(e) => setNewEstablishmentHours(e.target.value)}
-            placeholder="7.5"
-            step="0.25"
-            min="0"
+            onChange={setNewEstablishmentHours}
+            placeholder="7,5"
+            decimals={2}
           />
           <div className={styles.modalActions}>
             <Button variant="secondary" onClick={() => setShowNewEstablishment(false)}>
