@@ -1,7 +1,7 @@
 import { useState, useEffect, FormEvent } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 import { Header, Loading, Alert, Modal } from '@/components/common';
-import { Button, Input, NumberInput, Card } from '@/components/ui';
+import { Button, Input, NumberInput, Card, MultiDatePicker } from '@/components/ui';
 import {
   getWorkEntry,
   createWorkEntry,
@@ -11,7 +11,7 @@ import {
   createEstablishment,
 } from '@/services/firestore';
 import type { Establishment, WorkEntryFormData } from '@/types';
-import { getToday, addDays } from '@/utils/dates';
+import { getToday } from '@/utils/dates';
 import { calculateGross, calculateNet, DEFAULT_NET_COEFFICIENT } from '@/utils/calculations';
 import { formatCurrency } from '@/utils/format';
 import { getUserSettings } from '@/services/firestore';
@@ -34,7 +34,8 @@ export function WorkEntryForm() {
   const [newEstablishmentHours, setNewEstablishmentHours] = useState('');
 
   // Form fields
-  const [date, setDate] = useState(getToday());
+  const [date, setDate] = useState(getToday()); // For editing
+  const [dates, setDates] = useState<string[]>([getToday()]); // For creating multiple
   const [establishmentId, setEstablishmentId] = useState('');
   const [hours, setHours] = useState('');
   const [hourlyRate, setHourlyRate] = useState('');
@@ -94,36 +95,41 @@ export function WorkEntryForm() {
   );
   const net = calculateNet(gross, netCoefficient);
 
-  const handleSubmit = async (e: FormEvent, duplicate = false) => {
+  const handleSubmit = async (e: FormEvent) => {
     e.preventDefault();
     setError(null);
     setSaving(true);
 
     try {
-      const formData: WorkEntryFormData = {
-        date,
-        establishmentId,
-        hours: parseFloat(hours),
-        hourlyRate: parseFloat(hourlyRate),
-        note: note.trim() || undefined,
-      };
-
       const establishmentName = selectedEstablishment?.name || '';
 
       if (isEditing && id) {
+        // Edit mode: single date
+        const formData: WorkEntryFormData = {
+          date,
+          establishmentId,
+          hours: parseFloat(hours),
+          hourlyRate: parseFloat(hourlyRate),
+          note: note.trim() || undefined,
+        };
         await updateWorkEntry(id, formData, establishmentName);
       } else {
-        await createWorkEntry(formData, establishmentName);
+        // Create mode: multiple dates
+        const datesToCreate = dates.length > 0 ? dates : [getToday()];
+
+        for (const entryDate of datesToCreate) {
+          const formData: WorkEntryFormData = {
+            date: entryDate,
+            establishmentId,
+            hours: parseFloat(hours),
+            hourlyRate: parseFloat(hourlyRate),
+            note: note.trim() || undefined,
+          };
+          await createWorkEntry(formData, establishmentName);
+        }
       }
 
-      if (duplicate) {
-        // Stay on form, increment date, keep same establishment/hours/rate
-        setDate(addDays(date, 1));
-        setNote('');
-        setSaving(false);
-      } else {
-        navigate('/');
-      }
+      navigate('/');
     } catch (err) {
       console.error('Failed to save entry:', err);
       setError('Erreur lors de la sauvegarde.');
@@ -185,20 +191,29 @@ export function WorkEntryForm() {
 
       <div className={styles.content}>
         <Card>
-          <form onSubmit={(e) => handleSubmit(e, false)} className={styles.form}>
+          <form onSubmit={handleSubmit} className={styles.form}>
             {error && (
               <Alert type="error" onClose={() => setError(null)}>
                 {error}
               </Alert>
             )}
 
-            <Input
-              type="date"
-              label="Date"
-              value={date}
-              onChange={(e) => setDate(e.target.value)}
-              required
-            />
+            {isEditing ? (
+              <Input
+                type="date"
+                label="Date"
+                value={date}
+                onChange={(e) => setDate(e.target.value)}
+                required
+              />
+            ) : (
+              <MultiDatePicker
+                label="Dates"
+                dates={dates}
+                onChange={setDates}
+                helperText="Ajoutez plusieurs dates pour créer plusieurs entrées"
+              />
+            )}
 
             <div className={styles.establishmentField}>
               <label className={styles.label}>Établissement</label>
@@ -259,33 +274,27 @@ export function WorkEntryForm() {
             {/* Preview */}
             <div className={styles.preview}>
               <div className={styles.previewRow}>
-                <span>Brut:</span>
-                <span className={styles.previewValue}>{formatCurrency(gross)}</span>
+                <span>Brut{!isEditing && dates.length > 1 ? ` (x${dates.length})` : ''}:</span>
+                <span className={styles.previewValue}>
+                  {formatCurrency(!isEditing && dates.length > 1 ? gross * dates.length : gross)}
+                </span>
               </div>
               <div className={styles.previewRow}>
-                <span>Net estimé:</span>
+                <span>Net estimé{!isEditing && dates.length > 1 ? ` (x${dates.length})` : ''}:</span>
                 <span className={`${styles.previewValue} ${styles.netValue}`}>
-                  {formatCurrency(net)}
+                  {formatCurrency(!isEditing && dates.length > 1 ? net * dates.length : net)}
                 </span>
               </div>
             </div>
 
             <div className={styles.actions}>
-              <Button type="submit" fullWidth loading={saving}>
-                {isEditing ? 'Enregistrer' : 'Ajouter'}
+              <Button type="submit" fullWidth loading={saving} disabled={!isEditing && dates.length === 0}>
+                {isEditing
+                  ? 'Enregistrer'
+                  : dates.length > 1
+                    ? `Ajouter ${dates.length} entrées`
+                    : 'Ajouter'}
               </Button>
-
-              {!isEditing && (
-                <Button
-                  type="button"
-                  variant="secondary"
-                  fullWidth
-                  onClick={(e) => handleSubmit(e, true)}
-                  disabled={saving}
-                >
-                  Ajouter & Dupliquer (+1 jour)
-                </Button>
-              )}
 
               {isEditing && (
                 <Button
