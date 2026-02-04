@@ -42,10 +42,15 @@ export function SharePage() {
         setSettings(settingsData);
         setEstablishments(establishmentsData);
 
-        // Check if there's an existing share link
-        const existingLink = await getShareLink(month);
-        if (existingLink) {
-          setShareUrl(`${window.location.origin}/shared/${existingLink.token}`);
+        // Check if there's an existing share link (don't fail if not found)
+        try {
+          const existingLink = await getShareLink(month);
+          if (existingLink) {
+            setShareUrl(`${window.location.origin}/interim-planner/shared/${existingLink.token}`);
+          }
+        } catch (linkErr) {
+          // No existing link, that's fine
+          console.log('No existing share link:', linkErr);
         }
       } catch (err) {
         console.error('Failed to load data:', err);
@@ -104,7 +109,7 @@ export function SharePage() {
     setSharing(true);
     try {
       const token = await createShareLink(month, entries, summary);
-      const url = `${window.location.origin}/shared/${token}`;
+      const url = `${window.location.origin}/interim-planner/shared/${token}`;
       setShareUrl(url);
     } catch (err) {
       console.error('Failed to create share link:', err);
