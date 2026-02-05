@@ -1,8 +1,7 @@
-import { useState, useMemo } from 'react';
+import { useMemo } from 'react';
 import {
   formatDateDisplay,
   formatDateISO,
-  getCurrentMonth,
   getNextMonth,
   getPreviousMonth,
   formatMonthDisplay,
@@ -15,7 +14,8 @@ interface MultiDatePickerProps {
   dates: string[];
   onChange: (dates: string[]) => void;
   disabledDates?: string[];
-  onMonthChange?: (month: string) => void;
+  month: string;
+  onMonthChange: (month: string) => void;
   helperText?: string;
 }
 
@@ -46,18 +46,11 @@ function getCalendarDays(monthString: string): (string | null)[] {
 
 const DAY_LABELS = ['L', 'M', 'M', 'J', 'V', 'S', 'D'];
 
-export function MultiDatePicker({ label, dates, onChange, disabledDates = [], onMonthChange, helperText }: MultiDatePickerProps) {
-  const [currentMonth, setCurrentMonth] = useState(getCurrentMonth);
-
+export function MultiDatePicker({ label, dates, onChange, disabledDates = [], month, onMonthChange, helperText }: MultiDatePickerProps) {
   const selectedSet = useMemo(() => new Set(dates), [dates]);
   const disabledSet = useMemo(() => new Set(disabledDates), [disabledDates]);
 
-  const calendarDays = useMemo(() => getCalendarDays(currentMonth), [currentMonth]);
-
-  const handleChangeMonth = (month: string) => {
-    setCurrentMonth(month);
-    onMonthChange?.(month);
-  };
+  const calendarDays = useMemo(() => getCalendarDays(month), [month]);
 
   const handleToggleDate = (dateStr: string) => {
     if (disabledSet.has(dateStr)) return;
@@ -85,7 +78,7 @@ export function MultiDatePicker({ label, dates, onChange, disabledDates = [], on
           <button
             type="button"
             className={styles.navButton}
-            onClick={() => handleChangeMonth(getPreviousMonth(currentMonth))}
+            onClick={() => onMonthChange(getPreviousMonth(month))}
             aria-label="Mois précédent"
           >
             <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
@@ -93,12 +86,12 @@ export function MultiDatePicker({ label, dates, onChange, disabledDates = [], on
             </svg>
           </button>
           <span className={styles.monthLabel}>
-            {formatMonthDisplay(currentMonth)}
+            {formatMonthDisplay(month)}
           </span>
           <button
             type="button"
             className={styles.navButton}
-            onClick={() => handleChangeMonth(getNextMonth(currentMonth))}
+            onClick={() => onMonthChange(getNextMonth(month))}
             aria-label="Mois suivant"
           >
             <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
