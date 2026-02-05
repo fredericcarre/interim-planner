@@ -1,5 +1,13 @@
-import { useState } from 'react';
-import { formatDateDisplay, getToday } from '@/utils/dates';
+import { useState, useMemo } from 'react';
+import {
+  formatDateDisplay,
+  formatDateISO,
+  getCurrentMonth,
+  getNextMonth,
+  getPreviousMonth,
+  formatMonthDisplay,
+  parseISODate,
+} from '@/utils/dates';
 import styles from './MultiDatePicker.module.css';
 
 interface MultiDatePickerProps {
@@ -9,14 +17,45 @@ interface MultiDatePickerProps {
   helperText?: string;
 }
 
-export function MultiDatePicker({ label, dates, onChange, helperText }: MultiDatePickerProps) {
-  const [newDate, setNewDate] = useState(getToday());
+function getCalendarDays(monthString: string): (string | null)[] {
+  const [year, month] = monthString.split('-').map(Number);
+  const firstDay = new Date(year, month - 1, 1);
+  const lastDay = new Date(year, month, 0);
+  const daysInMonth = lastDay.getDate();
 
-  const handleAddDate = () => {
-    if (newDate && !dates.includes(newDate)) {
-      const updatedDates = [...dates, newDate].sort();
-      onChange(updatedDates);
-      setNewDate('');
+  // Monday = 0, Sunday = 6
+  let startDow = firstDay.getDay() - 1;
+  if (startDow < 0) startDow = 6;
+
+  const cells: (string | null)[] = [];
+
+  // Leading empty cells
+  for (let i = 0; i < startDow; i++) {
+    cells.push(null);
+  }
+
+  // Day cells
+  for (let d = 1; d <= daysInMonth; d++) {
+    cells.push(formatDateISO(new Date(year, month - 1, d)));
+  }
+
+  return cells;
+}
+
+const DAY_LABELS = ['L', 'M', 'M', 'J', 'V', 'S', 'D'];
+
+export function MultiDatePicker({ label, dates, onChange, helperText }: MultiDatePickerProps) {
+  const [currentMonth, setCurrentMonth] = useState(getCurrentMonth);
+
+  const selectedSet = useMemo(() => new Set(dates), [dates]);
+
+  const calendarDays = useMemo(() => getCalendarDays(currentMonth), [currentMonth]);
+
+  const handleToggleDate = (dateStr: string) => {
+    if (selectedSet.has(dateStr)) {
+      onChange(dates.filter((d) => d !== dateStr));
+    } else {
+      onChange([...dates, dateStr].sort());
     }
   };
 
@@ -24,35 +63,81 @@ export function MultiDatePicker({ label, dates, onChange, helperText }: MultiDat
     onChange(dates.filter((d) => d !== dateToRemove));
   };
 
-  const handleKeyDown = (e: React.KeyboardEvent) => {
-    if (e.key === 'Enter') {
-      e.preventDefault();
-      handleAddDate();
-    }
-  };
+  const today = formatDateISO(new Date());
 
   return (
     <div className={styles.container}>
       {label && <label className={styles.label}>{label}</label>}
 
-      <div className={styles.inputRow}>
-        <input
-          type="date"
-          value={newDate}
-          onChange={(e) => setNewDate(e.target.value)}
-          onKeyDown={handleKeyDown}
-          className={styles.dateInput}
-        />
-        <button
-          type="button"
-          onClick={handleAddDate}
-          disabled={!newDate || dates.includes(newDate)}
-          className={styles.addButton}
-        >
-          Ajouter
-        </button>
+      {/* Calendar */}
+      <div className={styles.calendar}>
+        {/* Month navigation */}
+        <div className={styles.calendarHeader}>
+          <button
+            type="button"
+            className={styles.navButton}
+            onClick={() => setCurrentMonth(getPreviousMonth(currentMonth))}
+            aria-label="Mois précédent"
+          >
+            <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+              <path d="M15 18l-6-6 6-6" />
+            </svg>
+          </button>
+          <span className={styles.monthLabel}>
+            {formatMonthDisplay(currentMonth)}
+          </span>
+          <button
+            type="button"
+            className={styles.navButton}
+            onClick={() => setCurrentMonth(getNextMonth(currentMonth))}
+            aria-label="Mois suivant"
+          >
+            <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+              <path d="M9 18l6-6-6-6" />
+            </svg>
+          </button>
+        </div>
+
+        {/* Day-of-week headers */}
+        <div className={styles.dayHeaders}>
+          {DAY_LABELS.map((d, i) => (
+            <div key={i} className={styles.dayHeader}>{d}</div>
+          ))}
+        </div>
+
+        {/* Day grid */}
+        <div className={styles.dayGrid}>
+          {calendarDays.map((dateStr, i) => {
+            if (!dateStr) {
+              return <div key={`empty-${i}`} className={styles.dayCell} />;
+            }
+
+            const isSelected = selectedSet.has(dateStr);
+            const isToday = dateStr === today;
+            const dayNum = parseISODate(dateStr).getDate();
+
+            return (
+              <button
+                key={dateStr}
+                type="button"
+                className={[
+                  styles.dayCell,
+                  styles.dayCellActive,
+                  isSelected ? styles.dayCellSelected : '',
+                  isToday && !isSelected ? styles.dayCellToday : '',
+                ].join(' ')}
+                onClick={() => handleToggleDate(dateStr)}
+                aria-label={`${isSelected ? 'Retirer' : 'Ajouter'} le ${dayNum}`}
+                aria-pressed={isSelected}
+              >
+                {dayNum}
+              </button>
+            );
+          })}
+        </div>
       </div>
 
+      {/* Selected dates chips */}
       {dates.length > 0 && (
         <div className={styles.datesList}>
           {dates.map((date) => (
