@@ -14,6 +14,8 @@ interface MultiDatePickerProps {
   label?: string;
   dates: string[];
   onChange: (dates: string[]) => void;
+  disabledDates?: string[];
+  onMonthChange?: (month: string) => void;
   helperText?: string;
 }
 
@@ -44,14 +46,21 @@ function getCalendarDays(monthString: string): (string | null)[] {
 
 const DAY_LABELS = ['L', 'M', 'M', 'J', 'V', 'S', 'D'];
 
-export function MultiDatePicker({ label, dates, onChange, helperText }: MultiDatePickerProps) {
+export function MultiDatePicker({ label, dates, onChange, disabledDates = [], onMonthChange, helperText }: MultiDatePickerProps) {
   const [currentMonth, setCurrentMonth] = useState(getCurrentMonth);
 
   const selectedSet = useMemo(() => new Set(dates), [dates]);
+  const disabledSet = useMemo(() => new Set(disabledDates), [disabledDates]);
 
   const calendarDays = useMemo(() => getCalendarDays(currentMonth), [currentMonth]);
 
+  const handleChangeMonth = (month: string) => {
+    setCurrentMonth(month);
+    onMonthChange?.(month);
+  };
+
   const handleToggleDate = (dateStr: string) => {
+    if (disabledSet.has(dateStr)) return;
     if (selectedSet.has(dateStr)) {
       onChange(dates.filter((d) => d !== dateStr));
     } else {
@@ -76,7 +85,7 @@ export function MultiDatePicker({ label, dates, onChange, helperText }: MultiDat
           <button
             type="button"
             className={styles.navButton}
-            onClick={() => setCurrentMonth(getPreviousMonth(currentMonth))}
+            onClick={() => handleChangeMonth(getPreviousMonth(currentMonth))}
             aria-label="Mois précédent"
           >
             <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
@@ -89,7 +98,7 @@ export function MultiDatePicker({ label, dates, onChange, helperText }: MultiDat
           <button
             type="button"
             className={styles.navButton}
-            onClick={() => setCurrentMonth(getNextMonth(currentMonth))}
+            onClick={() => handleChangeMonth(getNextMonth(currentMonth))}
             aria-label="Mois suivant"
           >
             <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
@@ -113,6 +122,7 @@ export function MultiDatePicker({ label, dates, onChange, helperText }: MultiDat
             }
 
             const isSelected = selectedSet.has(dateStr);
+            const isDisabled = disabledSet.has(dateStr);
             const isToday = dateStr === today;
             const dayNum = parseISODate(dateStr).getDate();
 
@@ -122,13 +132,14 @@ export function MultiDatePicker({ label, dates, onChange, helperText }: MultiDat
                 type="button"
                 className={[
                   styles.dayCell,
-                  styles.dayCellActive,
+                  isDisabled ? styles.dayCellDisabled : styles.dayCellActive,
                   isSelected ? styles.dayCellSelected : '',
-                  isToday && !isSelected ? styles.dayCellToday : '',
+                  isToday && !isSelected && !isDisabled ? styles.dayCellToday : '',
                 ].join(' ')}
                 onClick={() => handleToggleDate(dateStr)}
-                aria-label={`${isSelected ? 'Retirer' : 'Ajouter'} le ${dayNum}`}
-                aria-pressed={isSelected}
+                disabled={isDisabled}
+                aria-label={isDisabled ? `${dayNum} - déjà saisie` : `${isSelected ? 'Retirer' : 'Ajouter'} le ${dayNum}`}
+                aria-pressed={isDisabled ? undefined : isSelected}
               >
                 {dayNum}
               </button>

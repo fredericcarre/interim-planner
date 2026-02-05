@@ -116,6 +116,15 @@
   background-color: var(--color-primary-dark);
 }
 
+/* Disabled dates (already existing entries) */
+.dayCellDisabled {
+  background-color: var(--bg-tertiary);
+  color: var(--text-muted);
+  cursor: not-allowed;
+  opacity: 0.6;
+  text-decoration: line-through;
+}
+
 /* Date chips list */
 .datesList {
   display: flex;
