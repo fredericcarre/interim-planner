@@ -37,13 +37,15 @@ export function WorkEntryForm() {
   // Form fields
   const [date, setDate] = useState(getToday()); // For editing
   const [dates, setDates] = useState<string[]>([]); // For creating multiple
+  const [calendarMonth, setCalendarMonth] = useState(getCurrentMonth);
   const [existingDates, setExistingDates] = useState<string[]>([]);
   const [establishmentId, setEstablishmentId] = useState('');
   const [hours, setHours] = useState('');
   const [hourlyRate, setHourlyRate] = useState('');
   const [note, setNote] = useState('');
 
-  const loadExistingDatesForMonth = useCallback(async (month: string) => {
+  const handleCalendarMonthChange = useCallback(async (month: string) => {
+    setCalendarMonth(month);
     try {
       const entries = await getWorkEntriesForMonth(month);
       setExistingDates(entries.map((e) => e.date));
@@ -76,7 +78,7 @@ export function WorkEntryForm() {
           }
         } else {
           // Load existing dates for current month
-          await loadExistingDatesForMonth(getCurrentMonth());
+          await handleCalendarMonthChange(getCurrentMonth());
         }
       } catch (err) {
         console.error('Failed to load data:', err);
@@ -87,7 +89,7 @@ export function WorkEntryForm() {
     };
 
     loadData();
-  }, [id, isEditing, navigate, loadExistingDatesForMonth]);
+  }, [id, isEditing, navigate, handleCalendarMonthChange]);
 
   // When establishment changes, prefill rate and hours
   const handleEstablishmentChange = (estId: string) => {
@@ -226,7 +228,8 @@ export function WorkEntryForm() {
                 dates={dates}
                 onChange={setDates}
                 disabledDates={existingDates}
-                onMonthChange={loadExistingDatesForMonth}
+                month={calendarMonth}
+                onMonthChange={handleCalendarMonthChange}
                 helperText="Cliquez sur les jours pour les sélectionner. Les jours grisés ont déjà une entrée."
               />
             )}
