@@ -37,7 +37,9 @@ export function WorkEntryForm() {
   // Form fields
   const [date, setDate] = useState(getToday()); // For editing
   const [dates, setDates] = useState<string[]>([]); // For creating multiple
-  const [calendarMonth, setCalendarMonth] = useState(getCurrentMonth);
+  const [calendarMonth, setCalendarMonth] = useState(
+    () => sessionStorage.getItem('interim-planner-selected-month') || getCurrentMonth()
+  );
   const [existingDates, setExistingDates] = useState<string[]>([]);
   const [establishmentId, setEstablishmentId] = useState('');
   const [hours, setHours] = useState('');
@@ -77,8 +79,9 @@ export function WorkEntryForm() {
             navigate('/');
           }
         } else {
-          // Load existing dates for current month
-          await handleCalendarMonthChange(getCurrentMonth());
+          // Load existing dates for the selected month (from MonthView)
+          const savedMonth = sessionStorage.getItem('interim-planner-selected-month') || getCurrentMonth();
+          await handleCalendarMonthChange(savedMonth);
         }
       } catch (err) {
         console.error('Failed to load data:', err);
