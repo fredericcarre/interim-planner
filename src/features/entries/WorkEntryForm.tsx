@@ -1,4 +1,4 @@
-import { useState, useEffect, FormEvent } from 'react';
+import { useState, useEffect, useCallback, FormEvent } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 import { Header, Loading, Alert, Modal } from '@/components/common';
 import { Button, Input, NumberInput, Card, MultiDatePicker } from '@/components/ui';
@@ -9,9 +9,10 @@ import {
   deleteWorkEntry,
   getEstablishments,
   createEstablishment,
+  getWorkEntriesForMonth,
 } from '@/services/firestore';
 import type { Establishment, WorkEntryFormData } from '@/types';
-import { getToday } from '@/utils/dates';
+import { getToday, getCurrentMonth } from '@/utils/dates';
 import { calculateGross, calculateNet, DEFAULT_NET_COEFFICIENT } from '@/utils/calculations';
 import { formatCurrency } from '@/utils/format';
 import { getUserSettings } from '@/services/firestore';
@@ -36,10 +37,20 @@ export function WorkEntryForm() {
   // Form fields
   const [date, setDate] = useState(getToday()); // For editing
   const [dates, setDates] = useState<string[]>([]); // For creating multiple
+  const [existingDates, setExistingDates] = useState<string[]>([]);
   const [establishmentId, setEstablishmentId] = useState('');
   const [hours, setHours] = useState('');
   const [hourlyRate, setHourlyRate] = useState('');
   const [note, setNote] = useState('');
+
+  const loadExistingDatesForMonth = useCallback(async (month: string) => {
+    try {
+      const entries = await getWorkEntriesForMonth(month);
+      setExistingDates(entries.map((e) => e.date));
+    } catch {
+      // Non-blocking: calendar still works without disabled dates
+    }
+  }, []);
 
   useEffect(() => {
     const loadData = async () => {
@@ -63,6 +74,9 @@ export function WorkEntryForm() {
           } else {
             navigate('/');
           }
+        } else {
+          // Load existing dates for current month
+          await loadExistingDatesForMonth(getCurrentMonth());
         }
       } catch (err) {
         console.error('Failed to load data:', err);
@@ -73,7 +87,7 @@ export function WorkEntryForm() {
     };
 
     loadData();
-  }, [id, isEditing, navigate]);
+  }, [id, isEditing, navigate, loadExistingDatesForMonth]);
 
   // When establishment changes, prefill rate and hours
   const handleEstablishmentChange = (estId: string) => {
@@ -211,7 +225,9 @@ export function WorkEntryForm() {
                 label="Dates"
                 dates={dates}
                 onChange={setDates}
-                helperText="Ajoutez plusieurs dates pour créer plusieurs entrées"
+                disabledDates={existingDates}
+                onMonthChange={loadExistingDatesForMonth}
+                helperText="Cliquez sur les jours pour les sélectionner. Les jours grisés ont déjà une entrée."
               />
             )}
 
