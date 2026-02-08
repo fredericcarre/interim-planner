@@ -15,6 +15,7 @@ import {
 } from '@/utils/dates';
 import { calculateGross, calculateNet } from '@/utils/calculations';
 import { formatCurrency, formatHours } from '@/utils/format';
+import { downloadICS } from '@/utils/calendar';
 import styles from './MonthView.module.css';
 
 const MONTH_STORAGE_KEY = 'interim-planner-selected-month';
@@ -288,6 +289,13 @@ export function MonthView() {
               onClick={() => navigate(`/share/${currentMonth}`)}
             >
               Partager
+            </Button>
+            <Button
+              variant="secondary"
+              onClick={() => downloadICS(entries, currentMonth)}
+              disabled={entries.length === 0}
+            >
+              Calendrier
             </Button>
           </div>
         </div>
