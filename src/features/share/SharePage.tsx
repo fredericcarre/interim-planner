@@ -78,7 +78,7 @@ export function SharePage() {
         <h2 className={styles.sectionTitle}>Inviter une personne</h2>
         {loading ? <p className={styles.muted}>Chargement…</p> : invitation ? <div className={styles.invitation}>
           {qrCode && <img className={styles.qrCode} src={qrCode} alt="QR code d’invitation au planning" />}
-          <p className={styles.qrHint}>Faites scanner ce QR code par votre proche.</p>
+          <p className={styles.qrHint}>Faites scanner ce QR code par votre proche. Si le lien s’ouvre dans Safari ou Chrome, il peut s’y connecter : après acceptation, le planning apparaîtra aussi dans sa PWA.</p>
           <div className={styles.linkRow}>
             <input className={styles.linkInput} value={invitationUrl} readOnly aria-label="Lien d’invitation" />
             <Button variant="secondary" onClick={copyInvitation}>{copied ? 'Copié !' : 'Copier'}</Button>

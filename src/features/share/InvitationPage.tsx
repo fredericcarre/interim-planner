@@ -28,7 +28,7 @@ export function InvitationPage() {
       navigate(`/shared-plannings/${planning.ownerId}`, { replace: true });
     } catch (err) {
       console.error(err);
-      setError(err instanceof Error && err.message === 'OWN_INVITATION' ? 'Vous ne pouvez pas ajouter votre propre planning.' : 'Cette invitation n’est plus valide.');
+      setError(err instanceof Error && err.message === 'OWN_INVITATION' ? 'Vous ne pouvez pas ajouter votre propre planning.' : 'Impossible d’accepter cette invitation. Le propriétaire l’a peut-être désactivée.');
     } finally { setAccepting(false); }
   };
 

@@ -72,9 +72,10 @@ service cloud.firestore {
       }
 
       match /sharedPlannings/{ownerId} {
-        allow read, create, update, delete: if isOwner()
+        allow read, delete: if isOwner();
+        allow create, update: if isOwner()
           && request.auth.uid != ownerId
-          && (request.method == 'delete' || request.resource.data.ownerId == ownerId);
+          && request.resource.data.ownerId == ownerId;
       }
     }
 

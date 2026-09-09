@@ -1,5 +1,5 @@
 import { useState, FormEvent } from 'react';
-import { Link, useNavigate } from 'react-router-dom';
+import { Link, useLocation, useNavigate } from 'react-router-dom';
 import { signUp, signInWithGoogle, getAuthErrorMessage } from '@/services/auth';
 import { Button, Input, Card } from '@/components/ui';
 import { Alert } from '@/components/common';
@@ -7,6 +7,8 @@ import styles from './AuthPages.module.css';
 
 export function SignupPage() {
   const navigate = useNavigate();
+  const location = useLocation();
+  const returnTo = (location.state as { from?: { pathname?: string } } | null)?.from?.pathname || '/';
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
@@ -27,7 +29,7 @@ export function SignupPage() {
 
     try {
       await signUp(email, password);
-      navigate('/', { replace: true });
+      navigate(returnTo, { replace: true });
     } catch (err) {
       const errorCode = (err as { code?: string }).code || '';
       setError(getAuthErrorMessage(errorCode));
@@ -42,7 +44,7 @@ export function SignupPage() {
 
     try {
       await signInWithGoogle();
-      navigate('/', { replace: true });
+      navigate(returnTo, { replace: true });
     } catch (err) {
       const errorCode = (err as { code?: string }).code || '';
       if (errorCode !== 'auth/popup-closed-by-user' && errorCode !== 'auth/cancelled-popup-request') {
@@ -130,7 +132,7 @@ export function SignupPage() {
 
       <p className={styles.footer}>
         Déjà un compte ?{' '}
-        <Link to="/login" className={styles.link}>
+        <Link to="/login" state={location.state} className={styles.link}>
           Se connecter
         </Link>
       </p>

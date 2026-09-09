@@ -1,5 +1,5 @@
 import { useState, FormEvent } from 'react';
-import { Link, useNavigate } from 'react-router-dom';
+import { Link, useLocation, useNavigate } from 'react-router-dom';
 import { signIn, signInWithGoogle, getAuthErrorMessage } from '@/services/auth';
 import { Button, Input, Card } from '@/components/ui';
 import { Alert } from '@/components/common';
@@ -7,6 +7,8 @@ import styles from './AuthPages.module.css';
 
 export function LoginPage() {
   const navigate = useNavigate();
+  const location = useLocation();
+  const returnTo = (location.state as { from?: { pathname?: string } } | null)?.from?.pathname || '/';
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [loading, setLoading] = useState(false);
@@ -20,7 +22,7 @@ export function LoginPage() {
 
     try {
       await signIn(email, password);
-      navigate('/', { replace: true });
+      navigate(returnTo, { replace: true });
     } catch (err) {
       const errorCode = (err as { code?: string }).code || '';
       setError(getAuthErrorMessage(errorCode));
@@ -35,7 +37,7 @@ export function LoginPage() {
 
     try {
       await signInWithGoogle();
-      navigate('/', { replace: true });
+      navigate(returnTo, { replace: true });
     } catch (err) {
       const errorCode = (err as { code?: string }).code || '';
       // Don't show error if user just closed the popup
@@ -119,7 +121,7 @@ export function LoginPage() {
 
       <p className={styles.footer}>
         Pas encore de compte ?{' '}
-        <Link to="/signup" className={styles.link}>
+        <Link to="/signup" state={location.state} className={styles.link}>
           Créer un compte
         </Link>
       </p>
