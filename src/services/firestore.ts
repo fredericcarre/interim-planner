@@ -556,6 +556,14 @@ export async function getSharedPlannings(): Promise<SharedPlanning[]> {
   });
 }
 
+export async function getSharedPlanningByOwner(ownerId: string): Promise<SharedPlanning | null> {
+  const uid = getUserId();
+  const snapshot = await getDoc(doc(db, 'users', uid, 'sharedPlannings', ownerId));
+  if (!snapshot.exists()) return null;
+  const data = snapshot.data();
+  return { ...data, ownerId: snapshot.id, createdAt: toDate(data.createdAt) } as SharedPlanning;
+}
+
 export async function leaveSharedPlanning(ownerId: string): Promise<void> {
   const uid = getUserId();
   const batch = writeBatch(db);
