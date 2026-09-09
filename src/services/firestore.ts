@@ -11,6 +11,8 @@ import {
   orderBy,
   Timestamp,
   writeBatch,
+  onSnapshot,
+  Unsubscribe,
 } from 'firebase/firestore';
 import { db, auth } from './firebase';
 import type {
@@ -19,6 +21,9 @@ import type {
   WorkEntry,
   EstablishmentFormData,
   WorkEntryFormData,
+  PlanningInvitation,
+  PlanningViewer,
+  SharedPlanning,
 } from '@/types';
 import { DEFAULT_NET_COEFFICIENT } from '@/utils/calculations';
 
@@ -433,4 +438,154 @@ export async function getSharedPlanning(token: string): Promise<ShareLink | null
     ...data,
     createdAt: toDate(data.createdAt),
   } as ShareLink;
+}
+
+// ============ LIVE PLANNING SHARING ============
+
+function getUserLabel(): { displayName: string; email: string } {
+  const user = auth.currentUser;
+  if (!user) throw new Error('User not authenticated');
+  return {
+    displayName: user.displayName || user.email?.split('@')[0] || 'Utilisateur',
+    email: user.email || '',
+  };
+}
+
+function generateToken(): string {
+  const bytes = new Uint8Array(18);
+  crypto.getRandomValues(bytes);
+  return Array.from(bytes, (byte) => byte.toString(36).padStart(2, '0')).join('');
+}
+
+export async function getPlanningInvitation(): Promise<PlanningInvitation | null> {
+  const uid = getUserId();
+  const ref = doc(db, 'users', uid, 'planningShare', 'main');
+  const snapshot = await getDoc(ref);
+  if (!snapshot.exists()) return null;
+  const invitation = await getPlanningInvitationByToken(snapshot.data().token);
+  return invitation?.active ? invitation : null;
+}
+
+export async function getPlanningInvitationByToken(token: string): Promise<PlanningInvitation | null> {
+  const snapshot = await getDoc(doc(db, 'planningInvitations', token));
+  if (!snapshot.exists()) return null;
+  const data = snapshot.data();
+  return { ...data, createdAt: toDate(data.createdAt) } as PlanningInvitation;
+}
+
+export async function createPlanningInvitation(): Promise<PlanningInvitation> {
+  const uid = getUserId();
+  const { displayName, email } = getUserLabel();
+  const existing = await getPlanningInvitation();
+  if (existing) return existing;
+
+  const token = generateToken();
+  const createdAt = Timestamp.now();
+  const invitation = {
+    token,
+    ownerId: uid,
+    ownerName: displayName || email,
+    active: true,
+    createdAt,
+  };
+  const batch = writeBatch(db);
+  batch.set(doc(db, 'planningInvitations', token), invitation);
+  batch.set(doc(db, 'users', uid, 'planningShare', 'main'), { token, createdAt });
+  await batch.commit();
+  return { ...invitation, createdAt: createdAt.toDate() };
+}
+
+export async function disablePlanningInvitation(token: string): Promise<void> {
+  const uid = getUserId();
+  const batch = writeBatch(db);
+  batch.update(doc(db, 'planningInvitations', token), { active: false });
+  batch.delete(doc(db, 'users', uid, 'planningShare', 'main'));
+  await batch.commit();
+}
+
+export async function acceptPlanningInvitation(token: string): Promise<SharedPlanning> {
+  const uid = getUserId();
+  const invitation = await getPlanningInvitationByToken(token);
+  if (!invitation || !invitation.active) throw new Error('INVITATION_INVALID');
+  if (invitation.ownerId === uid) throw new Error('OWN_INVITATION');
+
+  const { displayName, email } = getUserLabel();
+  const createdAt = Timestamp.now();
+  const access = {
+    userId: uid,
+    displayName,
+    email,
+    invitationToken: token,
+    active: true,
+    createdAt,
+  };
+  const saved = {
+    ownerId: invitation.ownerId,
+    ownerName: invitation.ownerName,
+    invitationToken: token,
+    active: true,
+    createdAt,
+  };
+  const batch = writeBatch(db);
+  batch.set(doc(db, 'shareAccess', invitation.ownerId, 'viewers', uid), access);
+  batch.set(doc(db, 'users', uid, 'sharedPlannings', invitation.ownerId), saved);
+  await batch.commit();
+  return { ...saved, createdAt: createdAt.toDate() };
+}
+
+export async function getPlanningViewers(): Promise<PlanningViewer[]> {
+  const uid = getUserId();
+  const snapshot = await getDocs(collection(db, 'shareAccess', uid, 'viewers'));
+  return snapshot.docs.map((item) => {
+    const data = item.data();
+    return { ...data, userId: item.id, createdAt: toDate(data.createdAt) } as PlanningViewer;
+  });
+}
+
+export async function revokePlanningViewer(viewerId: string): Promise<void> {
+  const ownerId = getUserId();
+  await deleteDoc(doc(db, 'shareAccess', ownerId, 'viewers', viewerId));
+}
+
+export async function getSharedPlannings(): Promise<SharedPlanning[]> {
+  const uid = getUserId();
+  const snapshot = await getDocs(collection(db, 'users', uid, 'sharedPlannings'));
+  return snapshot.docs.map((item) => {
+    const data = item.data();
+    return { ...data, ownerId: item.id, createdAt: toDate(data.createdAt) } as SharedPlanning;
+  });
+}
+
+export async function leaveSharedPlanning(ownerId: string): Promise<void> {
+  const uid = getUserId();
+  const batch = writeBatch(db);
+  batch.delete(doc(db, 'users', uid, 'sharedPlannings', ownerId));
+  batch.delete(doc(db, 'shareAccess', ownerId, 'viewers', uid));
+  await batch.commit();
+}
+
+export function subscribeToSharedWorkEntries(
+  ownerId: string,
+  month: string,
+  onData: (entries: WorkEntry[]) => void,
+  onError: (error: Error) => void
+): Unsubscribe {
+  const collRef = collection(db, 'users', ownerId, 'workEntries');
+  const q = query(
+    collRef,
+    where('date', '>=', `${month}-01`),
+    where('date', '<=', `${month}-31`),
+    orderBy('date', 'asc')
+  );
+  return onSnapshot(q, (snapshot) => {
+    onData(snapshot.docs.map((item) => {
+      const data = item.data();
+      return {
+        id: item.id,
+        ...data,
+        createdAt: toDate(data.createdAt),
+        updatedAt: toDate(data.updatedAt),
+      } as WorkEntry;
+    }));
+  }, (error) => onError(error));
 }

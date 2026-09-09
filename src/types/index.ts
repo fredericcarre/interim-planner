@@ -60,6 +60,31 @@ export interface AuthUser {
   displayName: string | null;
 }
 
+export interface PlanningInvitation {
+  token: string;
+  ownerId: string;
+  ownerName: string;
+  active: boolean;
+  createdAt: Date;
+}
+
+export interface PlanningViewer {
+  userId: string;
+  displayName: string;
+  email: string;
+  invitationToken: string;
+  active: boolean;
+  createdAt: Date;
+}
+
+export interface SharedPlanning {
+  ownerId: string;
+  ownerName: string;
+  invitationToken: string;
+  active: boolean;
+  createdAt: Date;
+}
+
 // Export data structure for GDPR
 export interface UserExportData {
   exportDate: string;

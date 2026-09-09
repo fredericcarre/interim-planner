@@ -46,6 +46,19 @@ jobs:
           VITE_FIREBASE_MESSAGING_SENDER_ID: ${{ secrets.VITE_FIREBASE_MESSAGING_SENDER_ID }}
           VITE_FIREBASE_APP_ID: ${{ secrets.VITE_FIREBASE_APP_ID }}
 
+      # Keep Firestore access rules in sync with the application release.
+      # FIREBASE_SERVICE_ACCOUNT must contain the JSON key of a service
+      # account allowed to update Firestore security rules.
+      - name: Authenticate to Firebase
+        if: github.ref == 'refs/heads/claude/interim-planner-pwa-UswDr'
+        uses: google-github-actions/auth@v2
+        with:
+          credentials_json: ${{ secrets.FIREBASE_SERVICE_ACCOUNT }}
+
+      - name: Deploy Firestore rules
+        if: github.ref == 'refs/heads/claude/interim-planner-pwa-UswDr'
+        run: npx --yes firebase-tools deploy --only firestore:rules --project interim-planner-fb3c6 --non-interactive
+
       # Only prepare for deployment on feature branch
       - name: Setup SPA routing
         if: github.ref == 'refs/heads/claude/interim-planner-pwa-UswDr'

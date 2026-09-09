@@ -204,6 +204,12 @@ export function MonthView() {
             onClick={() => setMenuOpen(false)}
           />
           <div className={styles.menu}>
+            <button onClick={() => { navigate('/shared-plannings'); setMenuOpen(false); }}>
+              Plannings partagés
+            </button>
+            <button onClick={() => { navigate('/sharing'); setMenuOpen(false); }}>
+              Gérer mes partages
+            </button>
             <button onClick={() => { navigate('/establishments'); setMenuOpen(false); }}>
               Établissements
             </button>
@@ -286,7 +292,7 @@ export function MonthView() {
             </Button>
             <Button
               variant="secondary"
-              onClick={() => navigate(`/share/${currentMonth}`)}
+              onClick={() => navigate('/sharing')}
             >
               Partager
             </Button>

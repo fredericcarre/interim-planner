@@ -1,121 +1,60 @@
-import { useState, useEffect } from 'react';
-import { useParams } from 'react-router-dom';
-import { Loading } from '@/components/common';
-import { Card } from '@/components/ui';
-import { getSharedPlanning, ShareLink } from '@/services/firestore';
-import { formatMonthDisplay, formatDateDisplay } from '@/utils/dates';
-import { calculateGross } from '@/utils/calculations';
-import { formatCurrency, formatHours } from '@/utils/format';
+import { useEffect, useMemo, useState } from 'react';
+import { useNavigate, useParams } from 'react-router-dom';
+import { Header, Loading } from '@/components/common';
+import { Button, Card } from '@/components/ui';
+import { getSharedPlannings, leaveSharedPlanning, subscribeToSharedWorkEntries } from '@/services/firestore';
+import type { SharedPlanning, WorkEntry } from '@/types';
+import { formatDateDisplay, formatMonthDisplay, getCurrentMonth, getNextMonth, getPreviousMonth } from '@/utils/dates';
+import { formatHours } from '@/utils/format';
 import styles from './SharedViewPage.module.css';
 
 export function SharedViewPage() {
-  const { token } = useParams<{ token: string }>();
-  const [data, setData] = useState<ShareLink | null>(null);
+  const { ownerId } = useParams<{ ownerId: string }>();
+  const navigate = useNavigate();
+  const [planning, setPlanning] = useState<SharedPlanning | null>(null);
+  const [month, setMonth] = useState(getCurrentMonth());
+  const [entries, setEntries] = useState<WorkEntry[]>([]);
   const [loading, setLoading] = useState(true);
-  const [notFound, setNotFound] = useState(false);
+  const [revoked, setRevoked] = useState(false);
 
   useEffect(() => {
-    const loadData = async () => {
-      if (!token) {
-        setNotFound(true);
-        setLoading(false);
-        return;
-      }
+    getSharedPlannings().then((items) => setPlanning(items.find((item) => item.ownerId === ownerId) || null)).finally(() => setLoading(false));
+  }, [ownerId]);
+  useEffect(() => {
+    if (!ownerId || !planning) return;
+    setLoading(true); setRevoked(false);
+    return subscribeToSharedWorkEntries(ownerId, month, (data) => { setEntries(data); setLoading(false); }, () => { setRevoked(true); setLoading(false); });
+  }, [ownerId, month, planning]);
 
-      try {
-        const shared = await getSharedPlanning(token);
-        if (shared) {
-          setData(shared);
-        } else {
-          setNotFound(true);
-        }
-      } catch (err) {
-        console.error('Failed to load shared planning:', err);
-        setNotFound(true);
-      } finally {
-        setLoading(false);
-      }
-    };
+  const totalHours = useMemo(() => entries.reduce((total, entry) => total + entry.hours, 0), [entries]);
+  const leave = async () => {
+    if (!ownerId) return;
+    await leaveSharedPlanning(ownerId);
+    navigate('/shared-plannings', { replace: true });
+  };
 
-    loadData();
-  }, [token]);
-
-  if (loading) {
-    return <Loading fullScreen />;
-  }
-
-  if (notFound || !data) {
-    return (
-      <div className={styles.page}>
-        <div className={styles.content}>
-          <Card className={styles.errorCard}>
-            <h2>Lien non trouvé</h2>
-            <p>Ce lien de partage n'existe pas ou a expiré.</p>
-          </Card>
+  if (!planning && loading) return <Loading fullScreen />;
+  return <div className={styles.page}>
+    <Header title={planning?.ownerName || 'Planning partagé'} showBack />
+    <main className={styles.content}>
+      {!planning || revoked ? <Card className={styles.errorCard}>
+        <h2>Accès interrompu</h2><p>Le propriétaire a peut-être révoqué votre accès.</p>
+        {planning && <Button variant="secondary" onClick={leave}>Retirer de ma liste</Button>}
+      </Card> : <>
+        <div className={styles.liveBadge}><span /> Synchronisé en direct</div>
+        <div className={styles.monthSelector}>
+          <button onClick={() => setMonth(getPreviousMonth(month))} aria-label="Mois précédent">‹</button>
+          <strong>{formatMonthDisplay(month)}</strong>
+          <button onClick={() => setMonth(getNextMonth(month))} aria-label="Mois suivant">›</button>
         </div>
-      </div>
-    );
-  }
-
-  const monthLabel = formatMonthDisplay(data.month);
-
-  return (
-    <div className={styles.page}>
-      <header className={styles.header}>
-        <h1 className={styles.title}>Interim Planner</h1>
-      </header>
-
-      <div className={styles.content}>
-        <Card className={styles.mainCard}>
-          <div className={styles.cardHeader}>
-            <h2 className={styles.monthTitle}>Planning {monthLabel}</h2>
-            <p className={styles.subtitle}>Vue partagée en lecture seule</p>
-          </div>
-
-          <div className={styles.summary}>
-            <div className={styles.summaryItem}>
-              <span className={styles.summaryLabel}>Entrées</span>
-              <span className={styles.summaryValue}>{data.summary.count}</span>
-            </div>
-            <div className={styles.summaryItem}>
-              <span className={styles.summaryLabel}>Heures</span>
-              <span className={styles.summaryValue}>{formatHours(data.summary.totalHours)}</span>
-            </div>
-            <div className={styles.summaryItem}>
-              <span className={styles.summaryLabel}>Brut</span>
-              <span className={styles.summaryValue}>{formatCurrency(data.summary.totalGross)}</span>
-            </div>
-            <div className={styles.summaryItem}>
-              <span className={styles.summaryLabel}>Net estimé</span>
-              <span className={`${styles.summaryValue} ${styles.netValue}`}>
-                {formatCurrency(data.summary.totalNet)}
-              </span>
-            </div>
-          </div>
-
-          {data.entries.length > 0 ? (
-            <div className={styles.entries}>
-              {data.entries.map((entry, index) => {
-                const gross = calculateGross(entry.hours, entry.hourlyRate);
-                return (
-                  <div key={index} className={styles.entry}>
-                    <span className={styles.entryDate}>{formatDateDisplay(entry.date)}</span>
-                    <span className={styles.entryName}>{entry.establishmentName}</span>
-                    <span className={styles.entryHours}>{formatHours(entry.hours)}</span>
-                    <span className={styles.entryGross}>{formatCurrency(gross)}</span>
-                  </div>
-                );
-              })}
-            </div>
-          ) : (
-            <p className={styles.emptyState}>Aucune entrée pour ce mois.</p>
-          )}
-        </Card>
-
-        <p className={styles.footer}>
-          Créé avec Interim Planner
-        </p>
-      </div>
-    </div>
-  );
+        <Card className={styles.summaryCard}><span>{entries.length} journée{entries.length > 1 ? 's' : ''}</span><strong>{formatHours(totalHours)}</strong></Card>
+        {loading ? <Loading text="Synchronisation…" /> : entries.length === 0 ? <Card><p className={styles.emptyState}>Aucune entrée pour ce mois.</p></Card> :
+          <div className={styles.entries}>{entries.map((entry) => <Card key={entry.id} padding="sm" className={styles.entry}>
+            <div><strong>{formatDateDisplay(entry.date)}</strong><span>{entry.establishmentNameSnapshot}</span></div>
+            <strong>{formatHours(entry.hours)}</strong>{entry.note && <p>{entry.note}</p>}
+          </Card>)}</div>}
+        <Button variant="ghost" fullWidth onClick={leave}>Ne plus suivre ce planning</Button>
+      </>}
+    </main>
+  </div>;
 }

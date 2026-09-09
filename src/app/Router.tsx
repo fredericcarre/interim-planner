@@ -1,4 +1,4 @@
-import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
+import { BrowserRouter, Routes, Route, Navigate, useLocation } from 'react-router-dom';
 import { useAuth } from '@/contexts/AuthContext';
 import { Loading } from '@/components/common';
 
@@ -27,17 +27,19 @@ import { SettingsPage } from '@/features/settings';
 
 import { DataPrivacyPage, PrivacyPolicyPage } from '@/features/privacy';
 
-import { SharePage, SharedViewPage } from '@/features/share';
+import { SharePage, SharedViewPage, SharedPlanningsPage, InvitationPage } from '@/features/share';
 
 function PublicRoute({ children }: { children: React.ReactNode }) {
   const { isAuthenticated, loading } = useAuth();
+  const location = useLocation();
 
   if (loading) {
     return <Loading fullScreen />;
   }
 
   if (isAuthenticated) {
-    return <Navigate to="/" replace />;
+    const destination = (location.state as { from?: { pathname?: string } } | null)?.from?.pathname || '/';
+    return <Navigate to={destination} replace />;
   }
 
   return <>{children}</>;
@@ -75,9 +77,6 @@ export function Router() {
 
         {/* Privacy policy is accessible without login */}
         <Route path="/privacy/policy" element={<PrivacyPolicyPage />} />
-
-        {/* Shared planning view (public) */}
-        <Route path="/shared/:token" element={<SharedViewPage />} />
 
         {/* Protected routes */}
         <Route
@@ -123,13 +122,17 @@ export function Router() {
           }
         />
         <Route
-          path="/share/:month"
+          path="/sharing"
           element={
             <ProtectedRoute>
               <SharePage />
             </ProtectedRoute>
           }
         />
+        <Route path="/share/:month" element={<Navigate to="/sharing" replace />} />
+        <Route path="/invitation/:token" element={<ProtectedRoute><InvitationPage /></ProtectedRoute>} />
+        <Route path="/shared-plannings" element={<ProtectedRoute><SharedPlanningsPage /></ProtectedRoute>} />
+        <Route path="/shared-plannings/:ownerId" element={<ProtectedRoute><SharedViewPage /></ProtectedRoute>} />
 
         {/* Establishments */}
         <Route
