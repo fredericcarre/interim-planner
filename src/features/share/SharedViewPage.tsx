@@ -39,11 +39,12 @@ export function SharedViewPage() {
     navigate('/shared-plannings', { replace: true });
   };
 
-  if (!planning && planningLoading) return <Loading fullScreen text="Ouverture du planning…" />;
+  // Planning metadata is useful for the title, but must not block live entries.
+  const accessUnavailable = revoked || (!planningLoading && !planning);
   return <div className={styles.page}>
     <Header title={planning?.ownerName || 'Planning partagé'} showBack />
     <main className={styles.content}>
-      {!planning || revoked ? <Card className={styles.errorCard}>
+      {accessUnavailable ? <Card className={styles.errorCard}>
         <h2>Accès interrompu</h2><p>Le propriétaire a peut-être révoqué votre accès, ou la connexion a été interrompue.</p>
         <Button onClick={() => setRetryKey((value) => value + 1)}>Réessayer</Button>
         {planning && <Button variant="secondary" onClick={leave}>Retirer de ma liste</Button>}
