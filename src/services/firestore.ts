@@ -556,6 +556,19 @@ export async function getSharedPlannings(): Promise<SharedPlanning[]> {
   });
 }
 
+export function subscribeToSharedPlannings(
+  onData: (plannings: SharedPlanning[]) => void,
+  onError: (error: Error) => void
+): Unsubscribe {
+  const uid = getUserId();
+  return onSnapshot(collection(db, 'users', uid, 'sharedPlannings'), (snapshot) => {
+    onData(snapshot.docs.map((item) => {
+      const data = item.data();
+      return { ...data, ownerId: item.id, createdAt: toDate(data.createdAt) } as SharedPlanning;
+    }));
+  }, (error) => onError(error));
+}
+
 export async function getSharedPlanningByOwner(ownerId: string): Promise<SharedPlanning | null> {
   const uid = getUserId();
   const snapshot = await getDoc(doc(db, 'users', uid, 'sharedPlannings', ownerId));

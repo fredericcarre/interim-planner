@@ -16,20 +16,24 @@ export function SharedViewPage() {
   const [entries, setEntries] = useState<WorkEntry[]>([]);
   const [planningLoading, setPlanningLoading] = useState(true);
   const [entriesLoading, setEntriesLoading] = useState(true);
-  const [revoked, setRevoked] = useState(false);
+  const [planningError, setPlanningError] = useState(false);
+  const [syncError, setSyncError] = useState(false);
   const [retryKey, setRetryKey] = useState(0);
 
   useEffect(() => {
     if (!ownerId) { setPlanningLoading(false); return; }
     setPlanningLoading(true);
-    getSharedPlanningByOwner(ownerId).then(setPlanning).catch(() => setPlanning(null)).finally(() => setPlanningLoading(false));
+    setPlanningError(false);
+    getSharedPlanningByOwner(ownerId).then(setPlanning).catch(() => setPlanningError(true)).finally(() => setPlanningLoading(false));
   }, [ownerId, retryKey]);
   useEffect(() => {
     if (!ownerId) { setEntriesLoading(false); return; }
     // Start the live query immediately instead of waiting for the metadata
     // request. This removes an entire network round trip on mobile/PWA.
-    setEntriesLoading(true); setRevoked(false);
-    return subscribeToSharedWorkEntries(ownerId, month, (data) => { setEntries(data); setEntriesLoading(false); }, () => { setRevoked(true); setEntriesLoading(false); });
+    setEntriesLoading(entries.length === 0); setSyncError(false);
+    return subscribeToSharedWorkEntries(ownerId, month, (data) => { setEntries(data); setEntriesLoading(false); setSyncError(false); }, () => { setSyncError(true); setEntriesLoading(false); });
+  // Keep the last entries visible while the live listener reconnects.
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [ownerId, month, retryKey]);
 
   const totalHours = useMemo(() => entries.reduce((total, entry) => total + entry.hours, 0), [entries]);
@@ -40,7 +44,7 @@ export function SharedViewPage() {
   };
 
   // Planning metadata is useful for the title, but must not block live entries.
-  const accessUnavailable = revoked || (!planningLoading && !planning);
+  const accessUnavailable = !planningLoading && !planning && !planningError;
   return <div className={styles.page}>
     <Header title={planning?.ownerName || 'Planning partagé'} showBack />
     <main className={styles.content}>
@@ -49,7 +53,8 @@ export function SharedViewPage() {
         <Button onClick={() => setRetryKey((value) => value + 1)}>Réessayer</Button>
         {planning && <Button variant="secondary" onClick={leave}>Retirer de ma liste</Button>}
       </Card> : <>
-        <div className={styles.liveBadge}><span /> Synchronisé en direct</div>
+        {planningError || syncError ? <Card className={styles.syncError}><p>La synchronisation est momentanément indisponible. Le dernier planning reçu reste affiché.</p><Button variant="secondary" onClick={() => setRetryKey((value) => value + 1)}>Réessayer</Button></Card> :
+          <div className={styles.liveBadge}><span /> Synchronisé en direct</div>}
         <div className={styles.monthSelector}>
           <button onClick={() => setMonth(getPreviousMonth(month))} aria-label="Mois précédent">‹</button>
           <strong>{formatMonthDisplay(month)}</strong>

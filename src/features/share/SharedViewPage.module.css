@@ -180,3 +180,6 @@
 .entry div span { color: var(--text-secondary); }
 .entry p { grid-column: 1 / -1; color: var(--text-muted); font-size: var(--font-size-sm); }
 .errorCard { display: flex; flex-direction: column; gap: var(--spacing-md); text-align: center; }
+.syncError { display: flex; align-items: center; justify-content: space-between; gap: var(--spacing-md); margin-bottom: var(--spacing-md); }
+.syncError p { margin: 0; color: var(--text-secondary); font-size: var(--font-size-sm); }
+.syncError button { flex: 0 0 auto; }
