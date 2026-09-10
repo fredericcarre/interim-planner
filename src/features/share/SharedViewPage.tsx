@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useState } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
-import { Header, Loading } from '@/components/common';
+import { Header, Loading, Modal } from '@/components/common';
 import { Button, Card } from '@/components/ui';
 import { getSharedPlanningByOwner, leaveSharedPlanning, subscribeToSharedWorkEntries } from '@/services/firestore';
 import type { SharedPlanning, WorkEntry } from '@/types';
@@ -19,6 +19,8 @@ export function SharedViewPage() {
   const [planningError, setPlanningError] = useState<string | null>(null);
   const [syncError, setSyncError] = useState<string | null>(null);
   const [retryKey, setRetryKey] = useState(0);
+  const [confirmLeave, setConfirmLeave] = useState(false);
+  const [leaving, setLeaving] = useState(false);
 
   useEffect(() => {
     if (!ownerId) { setPlanningLoading(false); return; }
@@ -31,7 +33,11 @@ export function SharedViewPage() {
     // Start the live query immediately instead of waiting for the metadata
     // request. This removes an entire network round trip on mobile/PWA.
     setEntriesLoading(entries.length === 0); setSyncError(null);
-    return subscribeToSharedWorkEntries(ownerId, month, (data) => { setEntries(data); setEntriesLoading(false); setSyncError(null); }, (cause) => { setSyncError(cause.message); setEntriesLoading(false); });
+    return subscribeToSharedWorkEntries(ownerId, month, (data, state) => {
+      // Wait for the server before declaring a genuinely empty month.
+      if (state.fromCache && data.length === 0) return;
+      setEntries(data); setEntriesLoading(false); setSyncError(null);
+    }, (cause) => { setSyncError(cause.message); setEntriesLoading(false); });
   // Keep the last entries visible while the live listener reconnects.
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [ownerId, month, retryKey]);
@@ -39,8 +45,13 @@ export function SharedViewPage() {
   const totalHours = useMemo(() => entries.reduce((total, entry) => total + entry.hours, 0), [entries]);
   const leave = async () => {
     if (!ownerId) return;
-    await leaveSharedPlanning(ownerId);
-    navigate('/shared-plannings', { replace: true });
+    setLeaving(true);
+    try {
+      await leaveSharedPlanning(ownerId);
+      navigate('/shared-plannings', { replace: true });
+    } finally {
+      setLeaving(false);
+    }
   };
 
   // Planning metadata is useful for the title, but must not block live entries.
@@ -66,8 +77,15 @@ export function SharedViewPage() {
             <div><strong>{formatDateDisplay(entry.date)}</strong><span>{entry.establishmentNameSnapshot}</span></div>
             <strong>{formatHours(entry.hours)}</strong>{entry.note && <p>{entry.note}</p>}
           </Card>)}</div>}
-        <Button variant="ghost" fullWidth onClick={leave}>Ne plus suivre ce planning</Button>
+        <Button variant="ghost" fullWidth onClick={() => setConfirmLeave(true)}>Ne plus suivre ce planning</Button>
       </>}
     </main>
+    <Modal isOpen={confirmLeave} onClose={() => setConfirmLeave(false)} title="Ne plus suivre ce planning ?">
+      <p>Le planning disparaîtra de votre liste. Pour y accéder de nouveau, vous devrez rescanner le QR code du propriétaire.</p>
+      <div className={styles.modalActions}>
+        <Button variant="secondary" onClick={() => setConfirmLeave(false)}>Annuler</Button>
+        <Button variant="danger" onClick={leave} loading={leaving}>Ne plus suivre</Button>
+      </div>
+    </Modal>
   </div>;
 }

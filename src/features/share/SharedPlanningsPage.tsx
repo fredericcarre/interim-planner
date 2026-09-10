@@ -15,7 +15,9 @@ export function SharedPlanningsPage() {
   useEffect(() => {
     setLoading(items.length === 0);
     setError(null);
-    return subscribeToSharedPlannings((data) => {
+    return subscribeToSharedPlannings((data, state) => {
+      // An empty cache is not proof that the server-side list is empty.
+      if (state.fromCache && data.length === 0) return;
       setItems(data);
       setLoading(false);
       setError(null);

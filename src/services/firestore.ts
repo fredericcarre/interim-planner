@@ -557,15 +557,16 @@ export async function getSharedPlannings(): Promise<SharedPlanning[]> {
 }
 
 export function subscribeToSharedPlannings(
-  onData: (plannings: SharedPlanning[]) => void,
+  onData: (plannings: SharedPlanning[], state: { fromCache: boolean }) => void,
   onError: (error: Error) => void
 ): Unsubscribe {
   const uid = getUserId();
-  return onSnapshot(collection(db, 'users', uid, 'sharedPlannings'), (snapshot) => {
-    onData(snapshot.docs.map((item) => {
+  return onSnapshot(collection(db, 'users', uid, 'sharedPlannings'), { includeMetadataChanges: true }, (snapshot) => {
+    const plannings = snapshot.docs.map((item) => {
       const data = item.data();
       return { ...data, ownerId: item.id, createdAt: toDate(data.createdAt) } as SharedPlanning;
-    }));
+    });
+    onData(plannings, { fromCache: snapshot.metadata.fromCache });
   }, (error) => onError(error));
 }
 
@@ -588,7 +589,7 @@ export async function leaveSharedPlanning(ownerId: string): Promise<void> {
 export function subscribeToSharedWorkEntries(
   ownerId: string,
   month: string,
-  onData: (entries: WorkEntry[]) => void,
+  onData: (entries: WorkEntry[], state: { fromCache: boolean }) => void,
   onError: (error: Error) => void
 ): Unsubscribe {
   const collRef = collection(db, 'users', ownerId, 'workEntries');
@@ -598,8 +599,8 @@ export function subscribeToSharedWorkEntries(
     where('date', '<=', `${month}-31`),
     orderBy('date', 'asc')
   );
-  return onSnapshot(q, (snapshot) => {
-    onData(snapshot.docs.map((item) => {
+  return onSnapshot(q, { includeMetadataChanges: true }, (snapshot) => {
+    const entries = snapshot.docs.map((item) => {
       const data = item.data();
       return {
         id: item.id,
@@ -607,6 +608,7 @@ export function subscribeToSharedWorkEntries(
         createdAt: toDate(data.createdAt),
         updatedAt: toDate(data.updatedAt),
       } as WorkEntry;
-    }));
+    });
+    onData(entries, { fromCache: snapshot.metadata.fromCache });
   }, (error) => onError(error));
 }
