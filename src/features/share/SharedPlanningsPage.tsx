@@ -10,18 +10,18 @@ export function SharedPlanningsPage() {
   const navigate = useNavigate();
   const [items, setItems] = useState<SharedPlanning[]>([]);
   const [loading, setLoading] = useState(true);
-  const [error, setError] = useState(false);
+  const [error, setError] = useState<string | null>(null);
   const [retryKey, setRetryKey] = useState(0);
   useEffect(() => {
     setLoading(items.length === 0);
-    setError(false);
+    setError(null);
     return subscribeToSharedPlannings((data) => {
       setItems(data);
       setLoading(false);
-      setError(false);
-    }, () => {
+      setError(null);
+    }, (cause) => {
       // Keep the last successful result: a connection error is not an empty list.
-      setError(true);
+      setError(cause.message);
       setLoading(false);
     });
   // The existing items are intentionally retained while reconnecting.
@@ -29,7 +29,7 @@ export function SharedPlanningsPage() {
   }, [retryKey]);
   return <div className={styles.page}><Header title="Plannings partagés" showBack /><main className={styles.content}>
     <p className={styles.pageIntro}>Les plannings que vos proches partagent avec vous apparaissent ici.</p>
-    {error && <Card className={styles.syncError}><p>La synchronisation est momentanément indisponible.</p><Button variant="secondary" onClick={() => setRetryKey((value) => value + 1)}>Réessayer</Button></Card>}
+    {error && <Card className={styles.syncError}><div><p>La synchronisation est momentanément indisponible.</p><small>{error}</small></div><Button variant="secondary" onClick={() => setRetryKey((value) => value + 1)}>Réessayer</Button></Card>}
     {loading ? <Loading /> : error && items.length === 0 ? null : items.length === 0 ? <Card className={styles.emptyCard}>
       <div>👥</div><h2>Aucun planning partagé</h2><p>Scannez le QR code d’un proche pour ajouter son planning.</p>
     </Card> : <div className={styles.planningList}>{items.map((item) =>
