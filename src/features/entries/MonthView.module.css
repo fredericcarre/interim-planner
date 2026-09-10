@@ -217,8 +217,18 @@
 }
 
 .pastEntry {
-  opacity: 0.52;
-  filter: saturate(0.55);
+  filter: grayscale(0.35) saturate(0.55);
+  background-color: var(--bg-primary);
+  color: var(--text-muted);
+}
+
+.pastEntry .entryDate,
+.pastEntry .entryEstablishment,
+.pastEntry .entryDetails,
+.pastEntry .entryGross,
+.pastEntry .entryNet,
+.pastEntry .entryNote {
+  color: var(--text-muted);
 }
 
 .nextEntry {
