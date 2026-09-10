@@ -178,7 +178,7 @@
 .summaryCard span { color: var(--text-secondary); }
 .summaryCard strong { font-size: var(--font-size-xl); color: var(--color-primary); }
 .entry { display: grid; grid-template-columns: 1fr auto; align-items: center; gap: var(--spacing-sm); }
-.pastEntry { filter: grayscale(0.35) saturate(0.55); background-color: var(--bg-primary); color: var(--text-muted); }
+.pastEntry { background-color: var(--bg-primary); color: var(--text-muted); }
 .pastEntry div strong, .pastEntry div span, .pastEntry > strong, .pastEntry p { color: var(--text-muted); }
 .nextEntry { border: 2px solid var(--color-primary); box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.12); }
 .entry div { display: flex; flex-direction: column; }
