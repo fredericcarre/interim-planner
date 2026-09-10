@@ -12,6 +12,7 @@ import {
   getPreviousMonth,
   getNextMonth,
   formatDateDisplay,
+  getToday,
 } from '@/utils/dates';
 import { calculateGross, calculateNet } from '@/utils/calculations';
 import { formatCurrency, formatHours } from '@/utils/format';
@@ -42,6 +43,7 @@ export function MonthView() {
   const touchStartY = useRef(0);
   const touchCurrentX = useRef(0);
   const swipeRefs = useRef<Record<string, HTMLDivElement | null>>({});
+  const autoScrolledMonth = useRef<string | null>(null);
 
   const setCurrentMonth = useCallback((month: string) => {
     sessionStorage.setItem(MONTH_STORAGE_KEY, month);
@@ -91,6 +93,16 @@ export function MonthView() {
     },
     { totalHours: 0, totalGross: 0, totalNet: 0, entriesCount: 0 }
   );
+  const today = getToday();
+  const nextEntryId = currentMonth === getCurrentMonth()
+    ? entries.find((entry) => entry.date >= today)?.id
+    : undefined;
+
+  useEffect(() => {
+    if (loading || !nextEntryId || autoScrolledMonth.current === currentMonth) return;
+    autoScrolledMonth.current = currentMonth;
+    requestAnimationFrame(() => swipeRefs.current[nextEntryId]?.scrollIntoView({ behavior: 'smooth', block: 'center' }));
+  }, [currentMonth, loading, nextEntryId]);
 
   const handleLogout = async () => {
     try {
@@ -342,7 +354,7 @@ export function MonthView() {
                     onTouchEnd={() => handleTouchEnd(entry.id)}
                   >
                     <Card
-                      className={styles.entryCard}
+                      className={`${styles.entryCard} ${entry.date < today ? styles.pastEntry : ''} ${entry.id === nextEntryId ? styles.nextEntry : ''}`}
                       padding="sm"
                       onClick={() => {
                         if (swipedEntryId === entry.id) {
@@ -363,6 +375,7 @@ export function MonthView() {
                       <div className={styles.entryHeader}>
                         <span className={styles.entryDate}>
                           {formatDateDisplay(entry.date)}
+                          {entry.id === nextEntryId && <small className={styles.nextBadge}>{entry.date === today ? 'Aujourd’hui' : 'Prochaine mission'}</small>}
                         </span>
                         <span className={styles.entryEstablishment}>
                           {entry.establishmentNameSnapshot}

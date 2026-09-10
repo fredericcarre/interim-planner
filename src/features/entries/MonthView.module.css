@@ -216,6 +216,16 @@
   overflow: hidden;
 }
 
+.pastEntry {
+  opacity: 0.52;
+  filter: saturate(0.55);
+}
+
+.nextEntry {
+  border: 2px solid var(--color-primary);
+  box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.12);
+}
+
 .entryCard:hover {
   box-shadow: var(--shadow-md);
 }
@@ -255,6 +265,21 @@
   font-weight: 500;
   color: var(--text-primary);
   text-transform: capitalize;
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-xs);
+}
+
+.nextBadge {
+  padding: 2px 7px;
+  border-radius: 999px;
+  background: var(--color-primary);
+  color: #fff;
+  font-size: 0.65rem;
+  font-weight: 600;
+  line-height: 1.4;
+  text-transform: none;
+  white-space: nowrap;
 }
 
 .entryEstablishment {

@@ -1,10 +1,10 @@
-import { useEffect, useMemo, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import { useParams } from 'react-router-dom';
 import { Header, Loading } from '@/components/common';
 import { Button, Card } from '@/components/ui';
 import { getSharedPlanningByOwner, subscribeToSharedWorkEntries } from '@/services/firestore';
 import type { SharedPlanning, WorkEntry } from '@/types';
-import { formatDateDisplay, formatMonthDisplay, getCurrentMonth, getNextMonth, getPreviousMonth } from '@/utils/dates';
+import { formatDateDisplay, formatMonthDisplay, getCurrentMonth, getNextMonth, getPreviousMonth, getToday } from '@/utils/dates';
 import { formatHours } from '@/utils/format';
 import styles from './SharedViewPage.module.css';
 
@@ -18,6 +18,8 @@ export function SharedViewPage() {
   const [planningError, setPlanningError] = useState<string | null>(null);
   const [syncError, setSyncError] = useState<string | null>(null);
   const [retryKey, setRetryKey] = useState(0);
+  const entryRefs = useRef<Record<string, HTMLDivElement | null>>({});
+  const autoScrolledMonth = useRef<string | null>(null);
 
   useEffect(() => {
     if (!ownerId) { setPlanningLoading(false); return; }
@@ -40,6 +42,15 @@ export function SharedViewPage() {
   }, [ownerId, month, retryKey]);
 
   const totalHours = useMemo(() => entries.reduce((total, entry) => total + entry.hours, 0), [entries]);
+  const today = getToday();
+  const nextEntryId = month === getCurrentMonth()
+    ? entries.find((entry) => entry.date >= today)?.id
+    : undefined;
+  useEffect(() => {
+    if (entriesLoading || !nextEntryId || autoScrolledMonth.current === month) return;
+    autoScrolledMonth.current = month;
+    requestAnimationFrame(() => entryRefs.current[nextEntryId]?.scrollIntoView({ behavior: 'smooth', block: 'center' }));
+  }, [entriesLoading, month, nextEntryId]);
   // Planning metadata is useful for the title, but must not block live entries.
   const accessUnavailable = !planningLoading && !planning && !planningError;
   return <div className={styles.page}>
@@ -58,10 +69,12 @@ export function SharedViewPage() {
         </div>
         <Card className={styles.summaryCard}><span>{entries.length} journée{entries.length > 1 ? 's' : ''}</span><strong>{formatHours(totalHours)}</strong></Card>
         {entriesLoading ? <Loading text="Synchronisation…" /> : entries.length === 0 ? <Card><p className={styles.emptyState}>Aucune entrée pour ce mois.</p></Card> :
-          <div className={styles.entries}>{entries.map((entry) => <Card key={entry.id} padding="sm" className={styles.entry}>
-            <div><strong>{formatDateDisplay(entry.date)}</strong><span>{entry.establishmentNameSnapshot}</span></div>
-            <strong>{formatHours(entry.hours)}</strong>{entry.note && <p>{entry.note}</p>}
-          </Card>)}</div>}
+          <div className={styles.entries}>{entries.map((entry) => <div key={entry.id} ref={(element) => { entryRefs.current[entry.id] = element; }}>
+            <Card padding="sm" className={`${styles.entry} ${entry.date < today ? styles.pastEntry : ''} ${entry.id === nextEntryId ? styles.nextEntry : ''}`}>
+              <div><strong>{formatDateDisplay(entry.date)}{entry.id === nextEntryId && <small className={styles.nextBadge}>{entry.date === today ? 'Aujourd’hui' : 'Prochaine mission'}</small>}</strong><span>{entry.establishmentNameSnapshot}</span></div>
+              <strong>{formatHours(entry.hours)}</strong>{entry.note && <p>{entry.note}</p>}
+            </Card>
+          </div>)}</div>}
       </>}
     </main>
   </div>;
