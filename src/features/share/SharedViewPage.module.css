@@ -163,7 +163,9 @@
 .emptyCard h2 { margin-bottom: var(--spacing-sm); }
 .emptyCard p { color: var(--text-secondary); }
 .planningList, .entries { display: flex; flex-direction: column; gap: var(--spacing-sm); }
-.planningCard { display: flex; align-items: center; gap: var(--spacing-md); cursor: pointer; }
+.swipeRow { position: relative; overflow: hidden; border-radius: var(--radius-lg); touch-action: pan-y; }
+.planningCard { position: relative; z-index: 1; display: flex; align-items: center; gap: var(--spacing-md); cursor: pointer; transition: transform 180ms ease; user-select: none; }
+.deleteAction { position: absolute; inset: 0 0 0 auto; width: 84px; border: 0; background: var(--color-danger); color: white; font-size: 1.25rem; cursor: pointer; }
 .planningCard > div:nth-child(2) { flex: 1; display: flex; flex-direction: column; }
 .planningCard span { color: var(--text-muted); font-size: var(--font-size-sm); }
 .avatar { width: 44px; height: 44px; border-radius: 50%; background: var(--color-primary); color: white; display: grid; place-items: center; font-weight: 700; }
